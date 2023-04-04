@@ -1,0 +1,10 @@
+"2023":
+    income: 4000
+    expenses: 3846
+    total: 154
+    categories:
+        food: -9
+        insurance: -221
+        rent: -3600
+        salary: 4000
+        subscriptions: -16
