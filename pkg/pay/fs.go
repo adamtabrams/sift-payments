@@ -2,16 +2,13 @@ package pay
 
 import (
 	"os"
-	"strings"
+	"path/filepath"
 
 	"github.com/pkg/errors"
 	"golang.org/x/exp/maps"
 )
 
-func ConfigFromFile() (*Config, error) {
-	// TODO support XDG
-	const filePath = "config.yaml"
-
+func ConfigFromFile(filePath string) (*Config, error) {
 	bytes, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "cannot read config file: %v", filePath)
@@ -25,23 +22,18 @@ func ConfigFromFile() (*Config, error) {
 	return config, nil
 }
 
-func RecordMapFromDir(config *Config) (RecordMap, error) {
-	dirPath := config.Paths.RecordsDir
+func (c *Config) RecordMapFromDir() (RecordMap, error) {
+	dirPath := c.Paths.RecordsDir
+	globPath := filepath.Join(dirPath, "*.csv")
 
-	fileInfoList, err := os.ReadDir(dirPath)
+	pathList, err := filepath.Glob(globPath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "cannot read records dir: %v", dirPath)
 	}
 
-	rm := make(RecordMap)
-	for _, fileInfo := range fileInfoList {
-		// TODO consider using glob
-		if !strings.HasSuffix(fileInfo.Name(), ".csv") {
-			continue
-		}
-		// TODO handle invalid files
-		// TODO improve path handling
-		recordMap, err := RecordMapFromFile(config, dirPath + "/" + fileInfo.Name())
+	rm := make(RecordMap, len(pathList))
+	for _, path := range pathList {
+		recordMap, err := c.RecordMapFromFile(path)
 		if err != nil {
 			return nil, err
 		}
@@ -52,13 +44,13 @@ func RecordMapFromDir(config *Config) (RecordMap, error) {
 	return rm, nil
 }
 
-func RecordMapFromFile(config *Config, filePath string) (RecordMap, error) {
+func (c *Config) RecordMapFromFile(filePath string) (RecordMap, error) {
 	bytes, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "cannot read records file: %v", filePath)
 	}
 
-	recordMap, err := RecordMapFromBytes(config, bytes)
+	recordMap, err := RecordMapFromBytes(c, bytes)
 	if err != nil {
 		return nil, err
 	}
@@ -66,8 +58,8 @@ func RecordMapFromFile(config *Config, filePath string) (RecordMap, error) {
 	return recordMap, nil
 }
 
-func RuleListFromFile(config *Config) (RuleList, error) {
-	filePath := config.Paths.RulesFile
+func (c *Config) RuleListFromFile() (RuleList, error) {
+	filePath := c.Paths.RulesFile
 
 	bytes, err := os.ReadFile(filePath)
 	if err != nil {
@@ -82,13 +74,11 @@ func RuleListFromFile(config *Config) (RuleList, error) {
 	return ruleList, nil
 }
 
-// TODO implement
-func AddRuleToFile(config *Config, rule Rule) error {
-	file, err := os.OpenFile(config.Paths.RulesFile, os.O_APPEND|os.O_WRONLY, 0600)
+func (c *Config) AddRuleToFile(rule Rule) error {
+	file, err := os.OpenFile(c.Paths.RulesFile, os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {
 		return errors.Wrap(err, "cannot open rules files")
 	}
-
 	defer file.Close()
 
 	bytes, err := rule.Bytes()

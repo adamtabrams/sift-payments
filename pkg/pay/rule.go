@@ -29,7 +29,7 @@ func RuleListFromBytes(yamlData []byte) (rl RuleList, err error) {
 
 func NewRule(name, category string, amount int) Rule {
 	return Rule{
-		Name:     KeyFromRecordName(name),
+		Name:     keyFromRecordName(name),
 		Amount:   amount,
 		Category: category,
 	}
@@ -46,9 +46,8 @@ func (r Rule) Bytes() ([]byte, error) {
 	return bytes, nil
 }
 
-// TODO this mutates
+// warning: this mutates the map.
 func (rlm RuleListMap) AppendRule(rule Rule) {
-	// key := rlm.Key(rule.Name)
 	key := rule.Name
 	existing := rlm[key]
 	rlm[key] = append(existing, rule)
@@ -65,10 +64,7 @@ func (rl RuleList) Map() RuleListMap {
 }
 
 func (rlm RuleListMap) Category(record Record) (category string, ok bool) {
-	// key := rlm.Key(record.Name)
-	key := KeyFromRecordName(record.Name)
-	// fmt.Println("debug1 - " + record.Name)
-	// fmt.Println("debug2 - " + key)
+	key := keyFromRecordName(record.Name)
 	ruleList := rlm[key]
 
 	if len(ruleList) == 0 {
@@ -88,8 +84,7 @@ func (rlm RuleListMap) Category(record Record) (category string, ok bool) {
 	return category, ok
 }
 
-// TODO make private
-func KeyFromRecordName(name string) string {
+func keyFromRecordName(name string) string {
 	r := regexp.MustCompile(`\S*[0-9]\S*`)
 	s := r.ReplaceAllString(name, "")
 	s = strings.TrimSpace(s)

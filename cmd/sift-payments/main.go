@@ -2,44 +2,70 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
+	"log"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/adamtabrams/sift-payments/pkg/pay"
+	"github.com/adamtabrams/sift-payments/pkg/span"
 	"gopkg.in/yaml.v3"
 )
 
+var version = "v0.0.1"
+
 func main() {
-	config, err := pay.ConfigFromFile()
-	if err != nil {
-		fmt.Println(err)
-		return
+	log.SetFlags(log.Lshortfile)
+
+	var printVersion, skipPrompt bool
+	flag.BoolVar(&printVersion, "v", false, "prints the current version")
+	flag.BoolVar(&skipPrompt, "s", false, "skip user prompts")
+
+	var yearFlag, monthFlag, configPath string
+	flag.StringVar(&yearFlag, "y", "", "view payments for a given year")
+	flag.StringVar(&monthFlag, "m", "", "view payments for a given month")
+	flag.StringVar(&configPath, "config", "config.yaml", "path to config file")
+
+	// var category string
+	// flag.StringVar(&category, "c", "", "view payments for a given category")
+
+	flag.Parse()
+	if printVersion {
+		fmt.Println(version)
+		os.Exit(0)
 	}
 
-	ruleList, err := pay.RuleListFromFile(config)
+	timespan, err := span.Parse(yearFlag, monthFlag)
 	if err != nil {
-		fmt.Println(err)
-		return
+		log.Fatal(err)
 	}
 
-	ruleListByName := ruleList.Map()
-
-	recordByID, err := pay.RecordMapFromDir(config)
+	config, err := pay.ConfigFromFile(configPath)
 	if err != nil {
-		fmt.Println(err)
-		return
+		log.Fatal(err)
 	}
 
-	flags := parseFlags()
+	ruleList, err := config.RuleListFromFile()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	recordByID, err := config.RecordMapFromDir()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	categoriesByNum := categoriesByNum(config)
-
+	ruleListByName := ruleList.Map()
 	paymentListByTime := make(pay.PaymentListMap)
+	currentYear := time.Now().Year()
 
 	for _, record := range recordByID {
-		if !timeMatches(flags, record.Date) {
+		if !timespan.Contains(currentYear, record.Date) {
 			continue
 		}
 
@@ -48,13 +74,15 @@ func main() {
 			rule := pay.NewRule(record.Name, "skipped", 0)
 			save := false
 
-			// TODO replace tesing logic for conditional
-			if len(flags) == 0 || flags[0] != "skip" {
+			if !skipPrompt {
 				rule, save = promptUser(categoriesByNum, record)
 			}
 
 			if save {
-				pay.AddRuleToFile(config, rule)
+				err := config.AddRuleToFile(rule)
+				if err != nil {
+					log.Fatal(err)
+				}
 			}
 
 			ruleListByName.AppendRule(rule)
@@ -62,47 +90,50 @@ func main() {
 		}
 
 		payment := record.Payment(category)
-		key := keyFromTime(flags, record.Date)
+		key := timespan.Key(record.Date)
 		paymentList := paymentListByTime[key]
 		paymentListByTime[key] = append(paymentList, payment)
 	}
 
-	summary := paymentListByTime.Summary()
+	// Get summaries for each time period
+	summaryMap := paymentListByTime.SummaryMap()
 
-	bytes, err := yaml.Marshal(summary)
-	if err != nil {
-		fmt.Println(err)
-		return
+	// Get all keys
+	keyList := make([]string, 0, len(summaryMap))
+	for key := range summaryMap {
+		keyList = append(keyList, key)
 	}
 
-	fmt.Printf("\n%s\n", bytes)
+	// Sort all keys
+	sort.Strings(keyList)
+
+	// Convert name, create map, marshal text
+	for _, key := range keyList {
+		v := make(map[any]pay.Summary, 1)
+		name := timespan.Name(key)
+		v[name] = summaryMap[key]
+
+		bytes, err := yaml.Marshal(v)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Printf("\n%s\n", bytes)
+	}
 
 	// TODO handle printing for category
 }
 
-func parseFlags() []string {
-	return nil
-}
-
-func timeMatches(flags []string, date time.Time) bool {
-	return true
-}
-
-func keyFromTime(flags []string, date time.Time) string {
-	return "2023"
-}
-
-// TODO use STDERR
 func promptUser(categoriesByNum map[int]string, record pay.Record) (pay.Rule, bool) {
 	reader := bufio.NewReader(os.Stdin)
 
-	fmt.Printf("\nCould not sort expense of %v dollars for:\n%v\n\n", record.Amount, record.Name)
+	fmt.Fprintf(os.Stderr, "\nCould not sort expense of %v dollars for:\n%v\n\n", record.Amount, record.Name)
 
 	// TODO consider replacing with function that prints from list
 	cBytes, _ := yaml.Marshal(categoriesByNum)
-	fmt.Printf("%s", cBytes)
+	fmt.Fprintf(os.Stderr, "%s", cBytes)
 
-	fmt.Printf("\nSelect a category (blank to skip): ")
+	fmt.Fprintf(os.Stderr, "\nSelect a category (blank to skip): ")
 	numRaw, _ := reader.ReadString('\n')
 	num := strings.TrimSpace(numRaw)
 
@@ -118,7 +149,7 @@ func promptUser(categoriesByNum map[int]string, record pay.Record) (pay.Rule, bo
 		return pay.NewRule(record.Name, "skipped", 0), false
 	}
 
-	fmt.Printf("\nAlso require amount to match %v dollars (y/N): ", record.Amount)
+	fmt.Fprintf(os.Stderr, "\nAlso require amount to match %v dollars (y/N): ", record.Amount)
 	matchAmountRaw, _ := reader.ReadString('\n')
 	matchAmount := strings.TrimSpace(matchAmountRaw)
 
@@ -129,9 +160,9 @@ func promptUser(categoriesByNum map[int]string, record pay.Record) (pay.Rule, bo
 
 	rule := pay.NewRule(record.Name, category, amount)
 	rBytes, _ := yaml.Marshal(rule)
-	fmt.Printf("\n%s", rBytes)
+	fmt.Fprintf(os.Stderr, "\n%s", rBytes)
 
-	fmt.Printf("\nSave to rules (y/N): ")
+	fmt.Fprintf(os.Stderr, "\nSave to rules (y/N): ")
 	saveRaw, _ := reader.ReadString('\n')
 	save := strings.TrimSpace(saveRaw)
 

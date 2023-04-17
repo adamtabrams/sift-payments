@@ -11,12 +11,9 @@ type index struct {
 	date   int
 }
 
-// TODO fix initialization
-// func indexFromHeader(config *Config, header []string) (index *index, err error) {
 func indexFromHeader(config *Config, header []string) (*index, error) {
-	numFound := 0
 	index := &index{}
-	// fmt.Printf("debug: %+v\n", header)
+	numFound := 0
 
 	for i, col := range header {
 		switch col {
@@ -36,8 +33,7 @@ func indexFromHeader(config *Config, header []string) (*index, error) {
 	}
 
 	if numFound < 4 {
-		// TODO improve error message
-		return nil, errors.Errorf("cannot use config to create valid index: %+v", index)
+		return nil, errors.Errorf("cannot index header: %+v following config: %+v", header, config.Header)
 	}
 
 	return index, nil
