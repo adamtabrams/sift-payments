@@ -75,7 +75,7 @@ func (c *Config) RuleListFromFile() (RuleList, error) {
 }
 
 func (c *Config) AddRuleToFile(rule Rule) error {
-	file, err := os.OpenFile(c.Paths.RulesFile, os.O_APPEND|os.O_WRONLY, 0600)
+	file, err := os.OpenFile(c.Paths.RulesFile, os.O_APPEND|os.O_WRONLY, 0o600)
 	if err != nil {
 		return errors.Wrap(err, "cannot open rules files")
 	}
