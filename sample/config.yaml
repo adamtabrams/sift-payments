@@ -1,0 +1,16 @@
+rulesfile: rules.yaml
+recordsdir: records
+dateformat: 01/02/06
+
+header:
+  id: Transaction ID
+  name: Description
+  date: Date
+  amount: Amount
+
+categories:
+  - salary
+  - rent
+  - food
+  - insurance
+  - subscriptions
