@@ -1,5 +1,5 @@
-/sift-payments
-/records/*
-/config.yaml
-/rules.yaml
-/todo.txt
+bin
+records
+config.yaml
+rules.yaml
+todo.txt

@@ -1,16 +1,15 @@
 ##@ Build
 
+bin/sift: *.go pkg/*/*.go
+	go build -o bin/sift
+
 .PHONY: build
 build:
-	go build ./cmd/sift-payments
-
-.PHONY: integration-test
-integration-test:
-	cd sample && ./tests.sh
+	make bin/sift
 
 .PHONY: test
 test:
-	go test ./...
+	cd sample && ./tests.sh
 
 .PHONY: coverage
 coverage:

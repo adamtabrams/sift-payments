@@ -1,11 +1,11 @@
-- name: Recurring Withdrawal Bill Payment  FOO BAR INSURANCE  ST
+- name: 'Recurring Withdrawal Bill Payment # FOO BAR INSURANCE # ST'
   category: insurance
-- name: Recurring Withdrawal Bill Payment  MUSIC  ST
+- name: 'Recurring Withdrawal Bill Payment # MUSIC # ST'
   category: subscriptions
-- name: 'Withdrawal ACH VENBO TYPE: PAYMENT ID:  CO: VENBO NAME: JOHN DOE Entry Class Code: ABC ACH Trace Number:'
+- name: 'Withdrawal ACH VENBO TYPE: PAYMENT ID: # CO: VENBO NAME: JOHN DOE Entry Class Code: ABC ACH Trace Number: #'
   amount: -1200
   category: rent
-- name: 'Deposit ACH PAGER INC TYPE: DIR DEP ID:  CO: PAGER INC Entry Class Code: DEF ACH Trace Number:'
+- name: 'Deposit ACH PAGER INC TYPE: DIR DEP ID: # CO: PAGER INC Entry Class Code: DEF ACH Trace Number: #'
   category: salary
-- name: Recurring Withdrawal Debit Card COFFEE SHOP  ST Date
+- name: 'Recurring Withdrawal Debit Card COFFEE SHOP # ST Date # # #'
   category: food
