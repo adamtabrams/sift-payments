@@ -1,9 +1,10 @@
 module github.com/adamtabrams/sift-payments
 
-go 1.20
+go 1.24
 
 require (
-	github.com/pkg/errors v0.9.1
-	golang.org/x/exp v0.0.0-20230321023759-10a507213a29
+	github.com/alexflint/go-arg v1.5.1
 	gopkg.in/yaml.v3 v3.0.1
 )
+
+require github.com/alexflint/go-scalar v1.2.0 // indirect
