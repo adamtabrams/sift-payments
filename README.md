@@ -10,11 +10,13 @@ Those rules are stored in a file and used to categorize future transactions.
 ## Setup
 
 If `go` is already installed, just run `make` from the top of the repo.
+
 That will build an executable at `bin/sift`.
+
 Tests can be run with `make test`.
 
 
-## Examples
+## Flags
 
 Process records for January 2023:
 `./sift -y 2023 -m 1`
@@ -39,7 +41,7 @@ See all flags:
 `./sift --help`
 
 
-## Config
+## Configs
 
 Sift is requires a `config.yaml` file like this:
 ```
@@ -62,11 +64,15 @@ categories:
 ```
 
 New rules will be saved to the value of `rulefiles`.
+
 CSV files will be read from the value of `recordsdir`.
+
 Data in the date column of CSV files must match the value of `dateformat`.
 - Format must reference `Jan 02 2006`.
 - Refer to [golang time pkg](https://pkg.go.dev/time) if needed.
+
 The values in `header` specify which columns to use.
+
 Each value in `categories` is a budget category option to select.
 
-Check out the `sample` dir for more info.
+Check out the [sample dir](sample) for more info.
