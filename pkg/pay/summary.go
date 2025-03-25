@@ -17,19 +17,20 @@ type Summary struct {
 	Categories map[string]int
 }
 
-func (plm PaymentListMap) Summary() map[string]Summary {
-	sm := make(map[string]Summary, len(plm))
+func (plm PaymentListMap) SummaryMap() map[string]Summary {
+	summaryMap := make(map[string]Summary, len(plm))
 
-	for time, paymentList := range plm {
-		sm[time] = paymentList.Summary()
+	for name, paymentList := range plm {
+		summaryMap[name] = paymentList.Summary()
 	}
 
-	return sm
+	return summaryMap
 }
 
 func (pl PaymentList) Summary() Summary {
-	// TODO clean up
-	s := Summary{Categories: make(map[string]int)}
+	s := Summary{
+		Categories: make(map[string]int),
+	}
 
 	for _, payment := range pl {
 		if payment.Amount > 0 {
