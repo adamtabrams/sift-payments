@@ -18,4 +18,4 @@ coverage:
 
 .PHONY: lint
 lint:
-	golangci-lint run --timeout 90s
+	golangci-lint run
