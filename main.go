@@ -84,9 +84,12 @@ func main() {
 
 	summaries := make(map[string]sift.Summary)
 	categoryRes := []sift.Record{}
+	count := 0
 
 	for _, r := range records {
-		c := getCategory(config, f.NoPrompt, ruleTable, r)
+		count++
+		// c := getCategory(config, f.NoPrompt, ruleTable)
+		c := getCategory(config, f.NoPrompt, ruleTable, r, count, len(records))
 		if f.Category == c {
 			categoryRes = append(categoryRes, r)
 			continue
@@ -125,7 +128,8 @@ func main() {
 	}
 }
 
-func getCategory(c *ConfigFile, noPrompt bool, rt sift.RuleTable, rec sift.Record) string {
+// func getCategory(c *ConfigFile, noPrompt bool, rt sift.RuleTable, rec sift.Record) string {
+func getCategory(c *ConfigFile, noPrompt bool, rt sift.RuleTable, rec sift.Record, count, total int) string {
 	category, ok := rt.Category(rec)
 	if ok {
 		return category
@@ -137,7 +141,10 @@ func getCategory(c *ConfigFile, noPrompt bool, rt sift.RuleTable, rec sift.Recor
 		return rule.Category
 	}
 
-	rule, save := promptUser(c.Categories, rec)
+	// rule, save := promptUser(c.Categories, rec)
+	rule, save := promptUser(c.Categories, rec, count, total)
+
+	// TODO: removed asking to save rules?
 	if save {
 		err := addRuleToFile(c.RulesFile, rule)
 		assertNil(err, "error saving rule to file %s", c.RulesFile)
@@ -147,17 +154,19 @@ func getCategory(c *ConfigFile, noPrompt bool, rt sift.RuleTable, rec sift.Recor
 	return rule.Category
 }
 
-func promptUser(categories []string, rec sift.Record) (sift.Rule, bool) {
+// TODO: add way to save rule for a specific date
+func promptUser(categories []string, rec sift.Record, count, total int) (sift.Rule, bool) {
+// func promptUser(categories []string, rec sift.Record) (sift.Rule, bool) {
+	fmt.Fprintf(os.Stderr, "\nprogress: %v / %v", count, total)
 	fmt.Fprintf(os.Stderr, "\nname: %s\namount: %v\n\n", rec.Name, rec.Amount)
 
 	for i, c := range categories {
-		fmt.Fprintf(os.Stderr, "%v - %s", i+1, c)
+		fmt.Fprintf(os.Stderr, "%v - %s\n", i+1, c)
 	}
 
 	fmt.Fprintf(os.Stderr, "\nselect a category (blank to skip): ")
 	var input string
-	_, err := fmt.Scanln(&input)
-	assertNil(err, "cannot read input %s", input)
+	fmt.Scanln(&input)
 
 	category := "skipped"
 	if input != "" {
@@ -171,8 +180,7 @@ func promptUser(categories []string, rec sift.Record) (sift.Rule, bool) {
 	}
 
 	fmt.Fprintf(os.Stderr, "\nrequire amount to match %v dollars (y/N): ", rec.Amount)
-	_, err = fmt.Scanln(&input)
-	assertNil(err, "cannot read input %s", input)
+	fmt.Scanln(&input)
 
 	amount := 0
 	if strings.ToLower(input) == "y" {
@@ -183,11 +191,9 @@ func promptUser(categories []string, rec sift.Record) (sift.Rule, bool) {
 	ruleYaml, err := yaml.Marshal(rule)
 	assertNil(err, "error marshalling rule")
 
-	fmt.Fprintf(os.Stderr, "\n%s\nsave rule (y/N): ", ruleYaml)
-	_, err = fmt.Scanln(&input)
-	assertNil(err, "cannot read input %s", input)
-
-	save := strings.ToLower(input) == "y"
+	fmt.Fprintf(os.Stderr, "\n%s\nsave rule (Y/n): ", ruleYaml)
+	fmt.Scanln(&input)
+	save := strings.ToLower(input) != "n"
 
 	return rule, save
 }
